@@ -24,9 +24,9 @@ def get_data(len_train_data, len_val_data, len_test_data):
     num_train = math.floor(len(dataset)*len_train_data)
     num_val = math.floor(len(dataset)*len_val_data)
     num_test = math.floor(len(dataset)*len_test_data)
-    # print(num_train)
-    # print(num_val)
-    # print(num_test)
+    print("Number of images for training: ", num_train)
+    print("Number of images for validation: ", num_val)
+    print(num_test)
     dummy_len = len(dataset) - (num_test + num_train + num_val)
 
     # Split into train and validation
@@ -80,34 +80,42 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 
     iters, losses, train_acc, val_acc = [], [], [], []
 
-    # training
+    # Training
+    start_time = time.time()
     n = 0 # the number of iterations
     for epoch in range(num_epochs):
         for imgs, labels in iter(train_loader):
-
+          
             #############################################
             # To Enable GPU Usage
-            # if torch.cuda.is_available():
-            #   imgs = imgs.cuda()
-            #   labels = labels.cuda()
+            if torch.cuda.is_available():
+              imgs = imgs.cuda()
+              labels = labels.cuda()
             #############################################
+            
               
             out = model(imgs)             # forward pass
-            print("before training")
             loss = criterion(out, labels) # compute the total loss
             loss.backward()               # backward pass (compute parameter updates)
             optimizer.step()              # make the updates for each parameter
             optimizer.zero_grad()         # a clean up step for PyTorch
-            
-            # save the current training information
+
+            # Save the current training information
             iters.append(n)
             losses.append(float(loss)/batch_size)             # compute *average* loss
-            train_acc.append(get_accuracy(model, train_data)) # compute training accuracy 
-            val_acc.append(get_accuracy(model, val_data))  # compute validation accuracy
             n += 1
-        print(f'epoch {epoch} ended')
+        train_acc.append(get_accuracy(model, train_data)) # compute training accuracy 
+        val_acc.append(get_accuracy(model, val_data))  # compute validation accuracy
+        print(("Epoch {}: Train acc: {} |"+"Validation acc: {}").format(
+                epoch + 1,
+                train_acc[-1],
+                val_acc[-1]))
+    print('Finished Training')
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("Total time elapsed: {:.2f} seconds".format(elapsed_time))
 
-    # plotting
+    # Plotting
     plt.title("Training Curve")
     plt.plot(iters, losses, label="Train")
     plt.xlabel("Iterations")
@@ -115,9 +123,9 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     plt.show()
 
     plt.title("Training Curve")
-    plt.plot(iters, train_acc, label="Train")
-    plt.plot(iters, val_acc, label="Validation")
-    plt.xlabel("Iterations")
+    plt.plot(range(1 ,num_epochs+1), train_acc, label="Train")
+    plt.plot(range(1 ,num_epochs+1), val_acc, label="Validation")
+    plt.xlabel("Epochs")
     plt.ylabel("Training Accuracy")
     plt.legend(loc='best')
     plt.show()
@@ -125,10 +133,13 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
+
+print("Loading data sets...")
+train_data, val_data, test_data = get_data(0.08, 0.02, 0.02)
+
 baseline_model = Baseline()
-#TRAIN BASELINE ...
-# baseline_model.cuda() #USE GPU!
-train_data, val_data, test_data = get_data(0.001, 0.005, 0.001)
-train(baseline_model, train_data, val_data, 0.001, 64, 5)
+print("Training baseline...")
+if torch.cuda.is_available():
+    baseline_model.cuda() #USE GPU!
 
-
+train(baseline_model, train_data, val_data, 0.001, 64, 30)
