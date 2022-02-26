@@ -7,8 +7,36 @@ import torch.optim as optim
 import torchvision
 from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
+import math
 
 torch.manual_seed(1000)  # set the random seed
+
+def get_data(batch_s):
+
+    # ***** Specify the path to final dataset folder on your loca machine ******
+    data_path = "./Final Dataset"
+    transform = transforms.Compose([transforms.Resize((224,224)), 
+                                    transforms.ToTensor()])
+
+    #Seperate for training, validation, and test data 
+    dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
+    num_train = math.floor(len(dataset)*0.8)
+    num_val = math.floor(len(dataset)*0.1)
+    num_test = len(dataset)-num_train-num_val
+    #print(num_train)
+    #print(num_val)
+    #print(num_test)
+
+    # Split into train and validation
+    train_set, val_set, test_set = torch.utils.data.random_split(dataset, [num_train, num_val, num_test]) #80%, 10%, 10% split
+
+    
+    train_loader = torch.utils.data.DataLoader(train_set.dataset, batch_size=batch_s, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_set.dataset, batch_size=batch_s, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_set.dataset, batch_size=batch_s, shuffle=True)
+
+    return train_loader, val_loader, test_loader
 
 class Baseline(nn.Module):
     def __init__(self):
@@ -98,7 +126,10 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
-baseline_model = Baseline()
-#TRAIN BASELINE ...
-baseline_model.cuda() #USE GPU!
-train(baseline_model, train_data, val_data, 0.001, 64, 5)
+# baseline_model = Baseline()
+# #TRAIN BASELINE ...
+# baseline_model.cuda() #USE GPU!
+# train(baseline_model, train_data, val_data, 0.001, 64, 5)
+
+
+get_data(60)
