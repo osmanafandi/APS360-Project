@@ -12,7 +12,7 @@ import math
 
 torch.manual_seed(1000)  # set the random seed
 
-def get_data(batch_s):
+def get_data(len_train_data, len_val_data, len_test_data):
 
     # ***** Specify the path to final dataset folder on your loca machine ******
     data_path = "./Final Dataset"
@@ -21,22 +21,20 @@ def get_data(batch_s):
 
     #Seperate for training, validation, and test data 
     dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
-    num_train = math.floor(len(dataset)*0.8)
-    num_val = math.floor(len(dataset)*0.1)
-    num_test = len(dataset)-num_train-num_val
-    #print(num_train)
-    #print(num_val)
-    #print(num_test)
+    num_train = math.floor(len(dataset)*len_train_data)
+    num_val = math.floor(len(dataset)*len_val_data)
+    num_test = math.floor(len(dataset)*len_test_data)
+    # print(num_train)
+    # print(num_val)
+    # print(num_test)
+    dummy_len = len(dataset) - (num_test + num_train + num_val)
 
     # Split into train and validation
-    train_set, val_set, test_set = torch.utils.data.random_split(dataset, [num_train, num_val, num_test]) #80%, 10%, 10% split
+    train_set, val_set, test_set, dummy = torch.utils.data.random_split(dataset, [num_train, num_val, num_test, dummy_len]) #80%, 10%, 10% split
 
-    
-    train_loader = torch.utils.data.DataLoader(train_set.dataset, batch_size=batch_s, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_set.dataset, batch_size=batch_s, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_set.dataset, batch_size=batch_s, shuffle=True)
 
-    return train_loader, val_loader, test_loader
+    # return train_loader, val_loader, test_loader
+    return train_set, val_set, test_set
 
 class Baseline(nn.Module):
     def __init__(self):
@@ -76,7 +74,7 @@ def get_accuracy(model, data):
     return correct / total
 
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
-    train_loader = torch.utils.data.DataLoader(data, batch_size=batch_size)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
@@ -89,24 +87,25 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 
             #############################################
             # To Enable GPU Usage
-            if torch.cuda.is_available():
-              imgs = imgs.cuda()
-              labels = labels.cuda()
+            # if torch.cuda.is_available():
+            #   imgs = imgs.cuda()
+            #   labels = labels.cuda()
             #############################################
               
             out = model(imgs)             # forward pass
-
+            print("before training")
             loss = criterion(out, labels) # compute the total loss
             loss.backward()               # backward pass (compute parameter updates)
             optimizer.step()              # make the updates for each parameter
             optimizer.zero_grad()         # a clean up step for PyTorch
-
+            
             # save the current training information
             iters.append(n)
             losses.append(float(loss)/batch_size)             # compute *average* loss
             train_acc.append(get_accuracy(model, train_data)) # compute training accuracy 
             val_acc.append(get_accuracy(model, val_data))  # compute validation accuracy
             n += 1
+        print(f'epoch {epoch} ended')
 
     # plotting
     plt.title("Training Curve")
@@ -126,10 +125,10 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
-# baseline_model = Baseline()
-# #TRAIN BASELINE ...
+baseline_model = Baseline()
+#TRAIN BASELINE ...
 # baseline_model.cuda() #USE GPU!
-# train(baseline_model, train_data, val_data, 0.001, 64, 5)
+train_data, val_data, test_data = get_data(0.001, 0.005, 0.001)
+train(baseline_model, train_data, val_data, 0.001, 64, 5)
 
 
-get_data(60)
