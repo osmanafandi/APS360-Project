@@ -17,7 +17,8 @@ def get_data(len_train_data, len_val_data, len_test_data):
     # ***** Specify the path to final dataset folder on your loca machine ******
     data_path = "./Final Dataset"
     transform = transforms.Compose([transforms.Resize((224,224)), 
-                                    transforms.ToTensor()])
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     #Seperate for training, validation, and test data 
     dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
@@ -129,6 +130,6 @@ baseline_model = Baseline()
 #TRAIN BASELINE ...
 # baseline_model.cuda() #USE GPU!
 train_data, val_data, test_data = get_data(0.001, 0.005, 0.001)
-train(baseline_model, train_data, val_data, 0.001, 64, 5)
+train(baseline_model, train_data, val_data, 0.001, 64, 60)
 
 
