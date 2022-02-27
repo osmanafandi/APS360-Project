@@ -36,9 +36,9 @@ def get_data(len_train_data, len_val_data, len_test_data):
     # return train_loader, val_loader, test_loader
     return train_set, val_set, test_set
 
-class Baseline(nn.Module):
+class ANNBaseline(nn.Module):
     def __init__(self):
-        super(Baseline, self).__init__()
+        super(ANNBaseline, self).__init__()
         self.name = "Baseline"
         self.layer1 = nn.Linear(3 * 224 * 224, 84) #images are rgb 224 x 224 pixels
         self.layer2 = nn.Linear(84, 28)
@@ -52,6 +52,24 @@ class Baseline(nn.Module):
         output = self.layer3(activation2)
         output = output.squeeze(1)
         return output
+
+class CNNBaseline(nn.Module):
+    def __init__(self):
+        super(CNNBaseline, self).__init__()
+        self.conv1 = nn.Conv2d(3, 5, 5) #in_channels, out_channels, kernel_size, ((224-5+1)/2) = 110, use to connect layer!
+        self.pool = nn.MaxPool2d(2, 2) #kernel_size, stride 
+        self.conv2 = nn.Conv2d(5, 10, 5) #in_channels, out_channels, kernel_size, ((110-5+1)/2) use to connect layer.
+        self.fc1 = nn.Linear(10 * 53 * 53, 32) #10 * ((110-5+1)/2) * ((110-5+1)/2)
+        self.fc2 = nn.Linear(32, 9)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 10 * 53 * 53)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        x = x.squeeze(1) # Flatten to the batch size
+        return x  
 
 def get_accuracy(model, data):
     correct = 0
@@ -85,7 +103,7 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     n = 0 # the number of iterations
     for epoch in range(num_epochs):
         for imgs, labels in iter(train_loader):
-          
+            
             #############################################
             # To Enable GPU Usage
             if torch.cuda.is_available():
@@ -133,12 +151,19 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
+baseline_model = CNNBaseline()
+if torch.cuda.is_available():
+    baseline_model.cuda() #USE GPU!
+
+print("Testing for overfit (sanity check)...")
+train_data, val_data, test_data = get_data(0.001, 0.001, 0.001) #load small dataset for overfit test
+train(baseline_model, train_data, val_data, 0.001, 64, 200)
 
 print("Loading data sets...")
 train_data, val_data, test_data = get_data(0.08, 0.02, 0.02)
 
-baseline_model = Baseline()
 print("Training baseline...")
+baseline_model = CNNBaseline()
 if torch.cuda.is_available():
     baseline_model.cuda() #USE GPU!
 
