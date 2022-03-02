@@ -10,8 +10,6 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import math
 
-torch.manual_seed(1000)  # set the random seed
-
 def get_data(len_train_data, len_val_data, len_test_data):
 
     # ***** Specify the path to final dataset folder on your loca machine ******
@@ -57,24 +55,26 @@ class CNNBaseline(nn.Module):
     def __init__(self):
         super(CNNBaseline, self).__init__()
         self.conv1 = nn.Conv2d(3, 5, 5) #in_channels, out_channels, kernel_size, ((224-5+1)/2) = 110, use to connect layer!
+        self.conv2 = nn.Conv2d(5, 10, 3) #in_channels, out_channels, kernel_size, ((110-3+1)/2) use to connect layer.
+        self.conv3 = nn.Conv2d(10, 25, 3)
         self.pool = nn.MaxPool2d(2, 2) #kernel_size, stride 
-        self.conv2 = nn.Conv2d(5, 10, 5) #in_channels, out_channels, kernel_size, ((110-5+1)/2) use to connect layer.
-        self.fc1 = nn.Linear(10 * 53 * 53, 32) #10 * ((110-5+1)/2) * ((110-5+1)/2)
-        self.fc2 = nn.Linear(32, 9)
+        self.fc1 = nn.Linear(25 * 26 * 26, 32) #10 * ((110-5+1)/2) * ((110-5+1)/2)
+        self.fc2 = nn.Linear(32, 7)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 10 * 53 * 53)
+        x = self.pool(F.relu(self.conv3(x)))
+        x = x.view(-1, 25 * 26 * 26)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         x = x.squeeze(1) # Flatten to the batch size
-        return x  
+        return x   
 
-def get_accuracy(model, data):
+def get_accuracy(model, data, batch_size):
     correct = 0
     total = 0
-    for imgs, labels in torch.utils.data.DataLoader(data, batch_size=64):
+    for imgs, labels in torch.utils.data.DataLoader(data, batch_size=batch_size, shuffle=True):
 
         #############################################
         # To Enable GPU Usage
@@ -91,8 +91,9 @@ def get_accuracy(model, data):
         total += imgs.shape[0]
     return correct / total
 
-def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)
+def train_baseline(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
+    torch.manual_seed(1000)  # set the random seed
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
@@ -122,8 +123,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
             iters.append(n)
             losses.append(float(loss)/batch_size)             # compute *average* loss
             n += 1
-        train_acc.append(get_accuracy(model, train_data)) # compute training accuracy 
-        val_acc.append(get_accuracy(model, val_data))  # compute validation accuracy
+        train_acc.append(get_accuracy(model, train_data, batch_size)) # compute training accuracy 
+        val_acc.append(get_accuracy(model, val_data, batch_size))  # compute validation accuracy
         print(("Epoch {}: Train acc: {} |"+"Validation acc: {}").format(
                 epoch + 1,
                 train_acc[-1],
@@ -151,20 +152,20 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
-baseline_model = CNNBaseline()
-if torch.cuda.is_available():
-    baseline_model.cuda() #USE GPU!
+# baseline_model = CNNBaseline()
+# if torch.cuda.is_available():
+#     baseline_model.cuda() #USE GPU!
 
-print("Testing for overfit (sanity check)...")
-train_data, val_data, test_data = get_data(0.001, 0.001, 0.001) #load small dataset for overfit test
-train(baseline_model, train_data, val_data, 0.001, 64, 200)
+# print("Testing for overfit (sanity check)...")
+# train_data, val_data, test_data = get_data(0.001, 0.001, 0.001) #load small dataset for overfit test
+# train_baseline(baseline_model, train_data, val_data, 0.01, 64, 150)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.08, 0.02, 0.02)
+train_data, val_data, test_data = get_data(0.2, 0.03, 0.03)
 
 print("Training baseline...")
 baseline_model = CNNBaseline()
 if torch.cuda.is_available():
     baseline_model.cuda() #USE GPU!
 
-train(baseline_model, train_data, val_data, 0.001, 256, 30)
+train_baseline(baseline_model, train_data, val_data, 0.001, 64, 20)
