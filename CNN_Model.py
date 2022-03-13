@@ -12,7 +12,7 @@ import math
 
 class CNN_Model(nn.Module):
     #Should decide on default value for num_classes
-    def __init__(self, in_channels = 3, num_classes=7):
+    def __init__(self, in_channels = 3, num_classes=6):
         super(CNN_Model, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -58,7 +58,7 @@ class CNN_Model(nn.Module):
 
 def get_data(len_train_data, len_val_data, len_test_data):
     # ***** Specify the path to final dataset folder on your loca machine ******
-    data_path = "./Final Dataset"
+    data_path = "./Final Handpicked"
     transform = transforms.Compose([transforms.Resize((224, 224)),
                                     transforms.ToTensor()])
 
@@ -162,20 +162,20 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
-cnn_model = CNN_Model()
-if torch.cuda.is_available():
-    cnn_model.cuda() #USE GPU!
+# cnn_model = CNN_Model()
+# if torch.cuda.is_available():
+#     cnn_model.cuda() #USE GPU!
 
-print("Testing for overfit (sanity check)...")
-train_data, val_data, test_data = get_data(0.003, 0.003, 0.003) #load small dataset for overfit test
-train(cnn_model, train_data, val_data, 0.01, 16, 75)
+# print("Testing for overfit (sanity check)...")
+# train_data, val_data, test_data = get_data(0.1, 0.1, 0) #load small dataset for overfit test
+# train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.2, 0.03, 0.03)
+train_data, val_data, test_data = get_data(0.8, 0.2, 0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.001, 16, 20)
+train(cnn_model, train_data, val_data, 0.005, 16, 20)
