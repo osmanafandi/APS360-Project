@@ -41,9 +41,10 @@ class CNN_Model(nn.Module):
         self.linear =  nn.Sequential(
             nn.Linear(in_features=256*14*14, out_features=4096),
             nn.ReLU(),
-            #Could potentially add dropout here
+            nn.Dropout(0.25),
             nn.Linear(in_features=4096,out_features=4096),
             nn.ReLU(),
+            nn.Dropout(0.25),
             nn.Linear(in_features=4096,out_features=self.num_classes)
         )
 
@@ -58,7 +59,7 @@ class CNN_Model(nn.Module):
 
 def get_data(len_train_data, len_val_data, len_test_data):
     # ***** Specify the path to final dataset folder on your loca machine ******
-    data_path = "./Final Handpicked"
+    data_path = "./DatasetAugmented"
     transform = transforms.Compose([transforms.Resize((224, 224)),
                                     transforms.ToTensor()])
 
@@ -100,6 +101,7 @@ def get_accuracy(model, data, batch_size):
         
     return correct / total
 
+#list_of_classes = ['AsianAugmented', 'BlackAugmented', 'IndianAugmented', 'LatinoAugmented', 'MiddleEasternAugmented', 'WhiteAugmented']
 
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
     torch.manual_seed(1000)  # set the random seed
@@ -139,6 +141,12 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
             epoch + 1,
             train_acc[-1],
             val_acc[-1]))
+        # preds = torch.max(output.data, 1)
+        # acc = [0 for c in list_of_classes]
+        # for c in list_of_classes:
+        #     acc[c] = (((preds == labels) * (labels == c)).float() / (max(labels == c).sum(), 1))
+        #     print("Accuracy for ", c, " is ", acc[c])
+        
     print('Finished Training')
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -178,4 +186,4 @@ cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.005, 16, 20)
+train(cnn_model, train_data, val_data, 0.0025, 16, 20)
