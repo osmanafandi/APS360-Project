@@ -39,12 +39,13 @@ class CNN_Model(nn.Module):
         )
 
         self.linear =  nn.Sequential(
+            nn.Dropout(0.3),
             nn.Linear(in_features=256*14*14, out_features=4096),
             nn.ReLU(),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             nn.Linear(in_features=4096,out_features=4096),
             nn.ReLU(),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             nn.Linear(in_features=4096,out_features=self.num_classes)
         )
 
@@ -80,10 +81,10 @@ def get_data(len_train_data, len_val_data, len_test_data):
     # return train_loader, val_loader, test_loader
     return train_set, val_set, test_set
 
-def get_accuracy(model, data, batch_size):
+def get_accuracy(model, data_loader, batch_size):
     correct = 0
     total = 0
-    for imgs, labels in torch.utils.data.DataLoader(data, batch_size=batch_size, shuffle=True):
+    for imgs, labels in data_loader:
 
         #############################################
         # To Enable GPU Usage
@@ -106,6 +107,7 @@ def get_accuracy(model, data, batch_size):
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
     torch.manual_seed(1000)  # set the random seed
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
@@ -135,8 +137,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
             losses.append(float(loss) / batch_size)  # compute *average* loss
             n += 1
 
-        train_acc.append(get_accuracy(model, train_data, batch_size))  # compute training accuracy
-        val_acc.append(get_accuracy(model, val_data, batch_size))  # compute validation accuracy
+        train_acc.append(get_accuracy(model, train_loader, batch_size))  # compute training accuracy
+        val_acc.append(get_accuracy(model, val_loader, batch_size))  # compute validation accuracy
         print(("Epoch {}: Train acc: {} |" + "Validation acc: {}").format(
             epoch + 1,
             train_acc[-1],
@@ -186,4 +188,4 @@ cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.0025, 16, 20)
+train(cnn_model, train_data, val_data, 0.003, 16, 20)
