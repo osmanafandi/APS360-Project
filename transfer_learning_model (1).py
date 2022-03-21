@@ -9,6 +9,7 @@ Original file is located at
 **Transfer Learning model using VGG**
 """
 
+
 import numpy as np
 import time
 import torch
