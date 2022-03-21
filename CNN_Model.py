@@ -18,26 +18,29 @@ class CNN_Model(nn.Module):
         self.num_classes = num_classes
 
         self.conv = nn.Sequential(
+            #nn.BatchNorm2d(self.in_channels),
             nn.Conv2d(self.in_channels, 64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(64),
+            # nn.BatchNorm2d(64),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(128),
+            #nn.BatchNorm2d(128),
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(256),
+            # nn.BatchNorm2d(256),
             nn.Conv2d(256, 512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv2d(512, 512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(512),
+            # nn.BatchNorm2d(512),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
             nn.Conv2d(512, 512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2)
@@ -45,14 +48,15 @@ class CNN_Model(nn.Module):
         )
 
         self.linear =  nn.Sequential(
+            # nn.BatchNorm1d(512*7*7),
             nn.Dropout2d(0.5),
             nn.Linear(in_features=512*7*7, out_features=4096),
             nn.ReLU(),
-            nn.BatchNorm1d(4096),
+            # nn.BatchNorm1d(4096),
             nn.Dropout2d(0.5),
             nn.Linear(in_features=4096,out_features=4096),
             nn.ReLU(),
-            nn.BatchNorm1d(4096),
+            # nn.BatchNorm1d(4096),
             nn.Dropout2d(0.5),
             nn.Linear(in_features=4096,out_features=self.num_classes)
         )
@@ -196,4 +200,4 @@ cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.01, 16, 35)
+train(cnn_model, train_data, val_data, 0.005, 16, 35)
