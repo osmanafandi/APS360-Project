@@ -104,7 +104,7 @@ def mean_std_seperate(dataset):
     return mean, std
 
 
-def get_data(len_train_data, len_val_data, len_test_data, batch_size=64):
+def get_data(len_train_data, len_val_data, len_test_data):
     # ***** Specify the path to final dataset folder on your loca machine ******
     data_path = "./DatasetAugmented"
     transform = transforms.Compose([transforms.Resize((224, 224)),
@@ -241,15 +241,15 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 #     cnn_model.cuda() #USE GPU!
 
 # print("Testing for overfit (sanity check)...")
-# train_data, val_data, test_data = get_data(0.1, 0.1, 0, 16) #load small dataset for overfit test
+# train_data, val_data, test_data = get_data(0.1, 0.1, 0) #load small dataset for overfit test
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.01, 0.01, 0, 16)
+train_data, val_data, test_data = get_data(0.01, 0.1, 0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.005, 16, 35)
+train(cnn_model, train_data, val_data, 0.005, 16)
