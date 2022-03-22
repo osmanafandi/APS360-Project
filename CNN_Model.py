@@ -66,7 +66,41 @@ class CNN_Model(nn.Module):
 
 #TRAINING CODE FOR THE CNN_MODEL
 
-def get_data(len_train_data, len_val_data, len_test_data):
+# Normalizes the dataset over all pixels
+def mean_std_all(dataset):
+    count = 0
+    total = 0
+    squared_total = 0
+    
+    for data in dataset:
+        total += torch.sum(data[0])
+        squared_total += torch.sum(data[0]**2)
+        # print(data[0])
+        count += 1
+    mean = total / (count * 3 * 224 * 224)
+    squared_mean = squared_total / (count * 3 * 224 * 224)
+    std = (squared_mean - mean**2)**0.5
+    return mean, std
+
+# Normalizes the dataset overl 3 different RBG channels separately
+def mean_std_seperate(dataset):
+    total = [0,0,0]
+    count = 0
+    squared_total = [0,0,0]
+    
+    for data in dataset:
+        for i in range(3):
+            total[i] += torch.sum(data[0][i])
+            squared_total[i] += torch.sum(data[0][i]**2)
+        count += 1
+    mean = [element / (count * 3 * 224 * 224) for element in total]
+    squared_mean = [element / (count * 3 * 224 * 224) for element in squared_total]
+    std = [(squared_mean[i] - mean[i]**2)**0.5 for i in range(3)]
+    print(mean, std)
+    return mean, std
+
+
+def get_data(len_train_data, len_val_data, len_test_data, batch_size=64):
     # ***** Specify the path to final dataset folder on your loca machine ******
     data_path = "./DatasetAugmented"
     transform = transforms.Compose([transforms.Resize((224, 224)),
@@ -81,6 +115,24 @@ def get_data(len_train_data, len_val_data, len_test_data):
     print("Number of images for validation: ", num_val)
     print(num_test)
     dummy_len = len(dataset) - (num_test + num_train + num_val)
+
+
+    # Comment out till "Normalization" if you want to remove normalization code
+    mean, std = mean_std_all(dataset)
+    print("Mean: {}, Std: {}".format(mean, std))
+
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((mean),(std))])
+
+    # plt.imshow(dataset[0][0].permute(1,2,0))
+    # plt.show()
+
+    dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
+    # plt.imshow(dataset[0][0].permute(1,2,0))
+    # plt.show()
+
+    # Normalization
 
     # Split into train and validation
     train_set, val_set, test_set, dummy = torch.utils.data.random_split(dataset, [num_train, num_val, num_test,
@@ -185,11 +237,11 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 #     cnn_model.cuda() #USE GPU!
 
 # print("Testing for overfit (sanity check)...")
-# train_data, val_data, test_data = get_data(0.1, 0.1, 0) #load small dataset for overfit test
+# train_data, val_data, test_data = get_data(0.1, 0.1, 0, 16) #load small dataset for overfit test
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.8, 0.2, 0)
+train_data, val_data, test_data = get_data(0.01, 0.01, 0, 16)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
