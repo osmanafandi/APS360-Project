@@ -18,7 +18,6 @@ class CNN_Model(nn.Module):
         self.num_classes = num_classes
 
         self.conv = nn.Sequential(
-            #nn.BatchNorm2d(self.in_channels),
             nn.Conv2d(self.in_channels, 64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -48,7 +47,6 @@ class CNN_Model(nn.Module):
         )
 
         self.linear =  nn.Sequential(
-            # nn.BatchNorm1d(512*7*7),
             nn.Dropout2d(0.5),
             nn.Linear(in_features=512*7*7, out_features=4096),
             nn.ReLU(),
@@ -245,11 +243,11 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.01, 0.01, 0, 16)
+train_data, val_data, test_data = get_data(0.8, 0.2, 0, 16)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.01, 16, 35)
+train(cnn_model, train_data, val_data, 0.005, 16, 35)
