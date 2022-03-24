@@ -250,4 +250,5 @@ cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.005, 16, 35)
+train(cnn_model, train_data, val_data, 0.005, 16, 10)
+train(cnn_model, train_data, val_data, 0.001, 16, 20)
