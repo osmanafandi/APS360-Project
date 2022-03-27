@@ -173,7 +173,7 @@ def save_the_model(new_val_acc, model):
         Returns 1 if the best model was updated and 0 otherwise.
     '''
 
-    if not os.path.exists("./best_model_acc.txt"): # Do necessary adjustments if the script if being run for the first time
+    if not os.path.exists("./best_model_acc.txt"): # Do necessary adjustments if the script is being run for the first time
         f = open("best_model_acc.txt", "w")
         f.write("0")
         f.close()
