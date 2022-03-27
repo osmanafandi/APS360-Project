@@ -306,7 +306,7 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data = get_data("./DatasetAugmented", 0.5)
+train_data = get_data("./DatasetAugmented", 0.8)
 val_data = get_data("./Validation Images", 1.0)
 
 print("Training CNN...")
