@@ -169,8 +169,8 @@ list_of_classes = ['AsianAugmented', 'BlackAugmented', 'IndianAugmented', 'Latin
 
 
 def get_accuracy_per_class(model, data):
-    ''' Computes the total occurence per class that model predicts for data.
-        Use print(dataset.class_to_idx) to fingure out which index belongs to which class.
+    ''' Computes the total accuracy per class that model predicts for data.
+        Use print(dataset.class_to_idx) to figure out which index belongs to which class.
         Class accuracy is -1 if the image of that class never occures in a dataset.
         Returns the list of accuracies.
     '''
