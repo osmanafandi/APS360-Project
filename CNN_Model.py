@@ -148,7 +148,7 @@ def get_accuracy(model, data_loader, batch_size):
     correct = 0
     total = 0
     for imgs, labels in data_loader:
-
+        
         #############################################
         # To Enable GPU Usage
         if torch.cuda.is_available():
@@ -165,9 +165,48 @@ def get_accuracy(model, data_loader, batch_size):
         
     return correct / total
 
-#list_of_classes = ['AsianAugmented', 'BlackAugmented', 'IndianAugmented', 'LatinoAugmented', 'MiddleEasternAugmented', 'WhiteAugmented']
+list_of_classes = ['AsianAugmented', 'BlackAugmented', 'IndianAugmented', 'LatinoAugmented', 'MiddleEasternAugmented', 'WhiteAugmented']
 
 
+def get_accuracy_per_class(model, data):
+    ''' Computes the total occurence per class that model predicts for data.
+        Use print(dataset.class_to_idx) to fingure out which index belongs to which class.
+        Class accuracy is -1 if the image of that class never occures in a dataset.
+        Returns the list of accuracies.
+    '''
+
+    total_occurance = [0 for c in list_of_classes]
+    correct_predictions = [0 for c in list_of_classes]
+
+    for imgs, labels in torch.utils.data.DataLoader(data, 16):
+        
+        #############################################
+        # To Enable GPU Usage
+        if torch.cuda.is_available():
+            imgs = imgs.cuda()
+            labels = labels.cuda()
+        #############################################
+
+        output = model(imgs)
+        # select index with maximum prediction score
+        pred = output.max(1, keepdim=True)[1]
+        pred = pred[:,0].tolist()
+        labels = labels.tolist()
+        for i in range(len(labels)):
+            total_occurance[labels[i]] += 1 # Update the total count of occurance for this label
+            if labels[i] == pred[i]:
+                # Update if the prediction was correct
+                correct_predictions[labels[i]] += 1 
+    
+    acc = []
+    # Find perceptange per class
+    for i in range(len(list_of_classes)):
+        if total_occurance[i] != 0:
+            acc.append((correct_predictions[i] / total_occurance[i]) * 100)
+        else: # Meaning never appeared
+            acc.append(-1)
+    return acc
+        
 def save_the_model(new_val_acc, model):
     ''' If the new_val_acc beats the curr_acc, updates the best_model.
         Returns 1 if the best model was updated and 0 otherwise.
@@ -272,7 +311,7 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.001, 0.001, 0)
+train_data, val_data, test_data = get_data(0.001, 0.008, 0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
@@ -280,5 +319,5 @@ if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
 
-train(cnn_model, train_data, val_data, 0.005, 16, 10)
+train(cnn_model, train_data, val_data, 0.005, 16)
 train(cnn_model, train_data, val_data, 0.001, 16, 20)
