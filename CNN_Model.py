@@ -9,6 +9,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import math
+import os
 
 class CNN_Model(nn.Module):
     #Should decide on default value for num_classes
@@ -18,7 +19,6 @@ class CNN_Model(nn.Module):
         self.num_classes = num_classes
 
         self.conv = nn.Sequential(
-            #nn.BatchNorm2d(self.in_channels),
             nn.Conv2d(self.in_channels, 64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -48,7 +48,6 @@ class CNN_Model(nn.Module):
         )
 
         self.linear =  nn.Sequential(
-            # nn.BatchNorm1d(512*7*7),
             nn.Dropout2d(0.5),
             nn.Linear(in_features=512*7*7, out_features=4096),
             nn.ReLU(),
@@ -168,6 +167,33 @@ def get_accuracy(model, data_loader, batch_size):
 
 #list_of_classes = ['AsianAugmented', 'BlackAugmented', 'IndianAugmented', 'LatinoAugmented', 'MiddleEasternAugmented', 'WhiteAugmented']
 
+
+def save_the_model(new_val_acc, model):
+    ''' If the new_val_acc beats the curr_acc, updates the best_model.
+        Returns 1 if the best model was updated and 0 otherwise.
+    '''
+
+    if not os.path.exists("./best_model_acc.txt"): # Do necessary adjustments if the script if being run for the first time
+        f = open("best_model_acc.txt", "w")
+        f.write("0")
+        f.close()
+        curr_acc = 0
+    else:
+        f = open("best_model_acc.txt", "r")
+        curr_acc = float(f.readline().strip())
+        f.close()
+
+    if curr_acc < new_val_acc:
+        # Update the model
+        print("Updating the model. Previous accuracy {} | New accuracy {}".format(curr_acc, new_val_acc))
+        torch.save(model.state_dict(), "best_model")
+        f = open("best_model_acc.txt", "w")
+        f.write(str(new_val_acc))
+        f.close()
+        return 1
+    return 0
+
+
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
     torch.manual_seed(1000)  # set the random seed
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -203,6 +229,7 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 
         train_acc.append(get_accuracy(model, train_loader, batch_size))  # compute training accuracy
         val_acc.append(get_accuracy(model, val_loader, batch_size))  # compute validation accuracy
+        save_the_model(val_acc[-1], model)
         print(("Epoch {}: Train acc: {} |" + "Validation acc: {}").format(
             epoch + 1,
             train_acc[-1],
@@ -245,11 +272,13 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.01, 0.1, 0)
+train_data, val_data, test_data = get_data(0.001, 0.001, 0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
 if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
-train(cnn_model, train_data, val_data, 0.005, 16)
+
+train(cnn_model, train_data, val_data, 0.005, 16, 10)
+train(cnn_model, train_data, val_data, 0.001, 16, 20)

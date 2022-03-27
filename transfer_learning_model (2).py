@@ -9,11 +9,11 @@ Original file is located at
 **Transfer Learning model using VGG**
 """
 
-
 import numpy as np
 import time
 import torch
 import torch.nn as nn
+import torch.optim.lr_scheduler as lr_scheduler
 
 import torch.nn.functional as F
 import torch.optim as optim
@@ -28,27 +28,63 @@ torch.manual_seed(1)
 
 !unzip 'DatasetAugmented'
 
-vgg16 = models.vgg.vgg16(pretrained=True)
+vgg16 = models.vgg.vgg16(pretrained=True) #vgg16
 
 data_path = 'DatasetAugmented'
 
-def get_data(len_train_data, len_val_data, len_test_data):
+# Normalizes the dataset over all pixels
+def mean_std_all(dataset):
+    count = 0
+    total = 0
+    squared_total = 0
+    
+    for data in dataset:
+        total += torch.sum(data[0])
+        squared_total += torch.sum(data[0]**2)
+        # print(data[0])
+        count += 1
+    mean = total / (count * 3 * 224 * 224)
+    squared_mean = squared_total / (count * 3 * 224 * 224)
+    std = (squared_mean - mean**2)**0.5
+    return mean, std
 
-    transform = transforms.Compose([transforms.Resize((224,224)), 
+def get_data(len_train_data, len_val_data, len_test_data, batch_size=64):
+    # ***** Specify the path to final dataset folder on your loca machine ******
+    data_path = "./DatasetAugmented"
+    transform = transforms.Compose([transforms.Resize((224, 224)),
                                     transforms.ToTensor()])
 
-    #Seperate for training, validation, and test data 
+    # Seperate for training, validation, and test data
     dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
-    num_train = math.floor(len(dataset)*len_train_data)
-    num_val = math.floor(len(dataset)*len_val_data)
-    num_test = math.floor(len(dataset)*len_test_data)
+    num_train = math.floor(len(dataset) * len_train_data)
+    num_val = math.floor(len(dataset) * len_val_data)
+    num_test = math.floor(len(dataset) * len_test_data)
     print("Number of images for training: ", num_train)
     print("Number of images for validation: ", num_val)
-    print("Number of images for validation: ", num_test)
+    print(num_test)
     dummy_len = len(dataset) - (num_test + num_train + num_val)
 
+
+    # Comment out till "Normalization" if you want to remove normalization code
+    mean, std = mean_std_all(dataset)
+    print("Mean: {}, Std: {}".format(mean, std))
+
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((mean),(std))])
+
+    # plt.imshow(dataset[0][0].permute(1,2,0))
+    # plt.show()
+
+    dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
+    # plt.imshow(dataset[0][0].permute(1,2,0))
+    # plt.show()
+
+    # Normalization
+
     # Split into train and validation
-    train_set, val_set, test_set, dummy = torch.utils.data.random_split(dataset, [num_train, num_val, num_test, dummy_len]) #80%, 10%, 10% split
+    train_set, val_set, test_set, dummy = torch.utils.data.random_split(dataset, [num_train, num_val, num_test,
+                                                                                  dummy_len])  # 80%, 10%, 10% split
 
     # return train_loader, val_loader, test_loader
     return train_set, val_set, test_set
@@ -62,9 +98,11 @@ class ANNClassifier(nn.Module):
     def __init__(self):
         super(ANNClassifier, self).__init__()
         self.name = "ANN"
-        self.dropout = nn.Dropout(0.5)
+        #self.dropout = nn.Dropout(0.25)
         self.layer1 = nn.Linear(7 * 512 * 7, 5000) 
+        #self.layer1_n = nn.BatchNorm1d(5000)
         self.layer2 = nn.Linear(5000, 84)
+        #self.layer2_n = nn.BatchNorm1d(84)
         self.layer3 = nn.Linear(84, 28)
         self.layer4 = nn.Linear(28, 6) #6 outputs
 
@@ -73,19 +111,22 @@ class ANNClassifier(nn.Module):
         flattened = img.view(-1, 7 * 512 * 7)
 
         activation1 = self.layer1(flattened)
-        activation1 = self.dropout(activation1)
-
+        #activation1 = self.dropout(activation1)
+        #activation1 = self.layer1_n(activation1)
         activation1 = F.relu(activation1)
-        activation1 = self.dropout(activation1)
+        #activation1 = self.dropout(activation1)
 
         activation2 = self.layer2(activation1)
+
+        #activation2 = self.layer2_n(activation2)
+
         activation2 = F.relu(activation2)
 
         activation3 = self.layer3(activation2)
-        activation3 = self.dropout(activation3)
+        #activation3 = self.dropout(activation3)
 
         activation3 = F.relu(activation3)
-        activation3 = self.dropout(activation3)
+        #activation3 = self.dropout(activation3)
 
         output = self.layer4(activation3)
         output = output.squeeze(1)
@@ -182,15 +223,15 @@ VGGC = vgg16.features
 
 if torch.cuda.is_available():
     VGGC.cuda()
-    model_1.cuda() 
+    model.cuda() 
     print('CUDA is available!  Training on GPU ...')
 else:
     print('CUDA is not available.  Training on CPU ...')
 
 
 torch.cuda.memory_summary(device=None, abbreviated=False)
-train(model_1, train_data, val_data, 0.001, 32, 5)
+train(model, train_data, val_data, 0.001, 32, 5)
 
-train(model_1, train_data, val_data, 0.001, 32, 5)
+train(model, train_data, val_data, 0.001, 32, 5)
 
-train(model_1, train_data, val_data, 0.001, 32, 5)
+train(model, train_data, val_data, 0.001, 32, 5)
