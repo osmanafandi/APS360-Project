@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import math
 import os
 
+torch.manual_seed(1000)  # set the random seed
+
 class CNN_Model(nn.Module):
     #Should decide on default value for num_classes
     def __init__(self, in_channels = 3, num_classes=6):
@@ -139,7 +141,8 @@ def get_data(path, len_data):
     # return train_loader, val_loader, test_loader
     return data_set
 
-def get_accuracy(model, data_loader, batch_size):
+def get_accuracy(model, data_loader):
+    torch.manual_seed(1000)  # set the random seed
     correct = 0
     total = 0
     for imgs, labels in data_loader:
@@ -164,6 +167,7 @@ list_of_classes = ['Asian', 'Black', 'Indian', 'Latino', 'MiddleEastern', 'White
 
 
 def get_accuracy_per_class(model, data):
+    torch.manual_seed(1000)  # set the random seed
     ''' Computes the total occurence per class that model predicts for data.
         Use print(dataset.class_to_idx) to fingure out which index belongs to which class.
         Class accuracy is -1 if the image of that class never occures in a dataset.
@@ -319,9 +323,9 @@ train(cnn_model, train_data, val_data, 0.005, 16, 10)
 train(cnn_model, train_data, val_data, 0.001, 16, 20)
 print(get_accuracy_per_class(cnn_model, val_data))
 
-# test_data = get_test_data(1.0)
+# test_data = get_data("./Test Images", 1.0)
 
 # state = torch.load("./Model/best_model")
 # cnn_model.load_state_dict(state)
-# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(test_data, 16), 16))
-# print(get_accuracy_per_class(cnn_model, test_data))
+# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(val_data, 16), 16))
+# print(get_accuracy_per_class(cnn_model, val_data))
