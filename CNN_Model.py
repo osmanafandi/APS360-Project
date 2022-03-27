@@ -103,21 +103,17 @@ def mean_std_seperate(dataset):
     return mean, std
 
 
-def get_data(len_train_data, len_val_data, len_test_data):
-    # ***** Specify the path to final dataset folder on your loca machine ******
-    data_path = "./DatasetAugmented"
+def get_data(path, len_data):
+    # ***** Specify the path to final dataset folder on your local machine ******
+    data_path = path
     transform = transforms.Compose([transforms.Resize((224, 224)),
                                     transforms.ToTensor()])
 
     # Seperate for training, validation, and test data
     dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
-    num_train = math.floor(len(dataset) * len_train_data)
-    num_val = math.floor(len(dataset) * len_val_data)
-    num_test = math.floor(len(dataset) * len_test_data)
-    print("Number of images for training: ", num_train)
-    print("Number of images for validation: ", num_val)
-    print(num_test)
-    dummy_len = len(dataset) - (num_test + num_train + num_val)
+    num_data = math.floor(len(dataset) * len_data)
+    print("Number of images: ", num_data)
+    dummy_len = len(dataset) - (num_data)
 
 
     # Comment out till "Normalization" if you want to remove normalization code
@@ -138,11 +134,10 @@ def get_data(len_train_data, len_val_data, len_test_data):
     # Normalization
 
     # Split into train and validation
-    train_set, val_set, test_set, dummy = torch.utils.data.random_split(dataset, [num_train, num_val, num_test,
-                                                                                  dummy_len])  # 80%, 10%, 10% split
+    data_set, dummy = torch.utils.data.random_split(dataset, [num_data, dummy_len])
 
     # return train_loader, val_loader, test_loader
-    return train_set, val_set, test_set
+    return data_set
 
 def get_accuracy(model, data_loader, batch_size):
     correct = 0
@@ -165,7 +160,7 @@ def get_accuracy(model, data_loader, batch_size):
         
     return correct / total
 
-list_of_classes = ['AsianAugmented', 'BlackAugmented', 'IndianAugmented', 'LatinoAugmented', 'MiddleEasternAugmented', 'WhiteAugmented']
+list_of_classes = ['Asian', 'Black', 'Indian', 'Latino', 'MiddleEastern', 'White']
 
 
 def get_accuracy_per_class(model, data):
@@ -311,7 +306,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.001, 0.008, 0)
+train_data = get_data("./DatasetAugmented", 0.8)
+val_data = get_data("./Validation Images", 1.0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
@@ -319,5 +315,13 @@ if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
 
-train(cnn_model, train_data, val_data, 0.005, 16)
+train(cnn_model, train_data, val_data, 0.005, 16, 10)
 train(cnn_model, train_data, val_data, 0.001, 16, 20)
+print(get_accuracy_per_class(cnn_model, val_data))
+
+# test_data = get_test_data(1.0)
+
+# state = torch.load("./Model/best_model")
+# cnn_model.load_state_dict(state)
+# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(test_data, 16), 16))
+# print(get_accuracy_per_class(cnn_model, test_data))

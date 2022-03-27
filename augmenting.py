@@ -29,9 +29,9 @@ for path in dirs:
         
         # Transofrmations
         dataset.append(transforms.RandomHorizontalFlip(p=1)(original_dataset[i][0])) # Horizontal Flip
-        dataset.append(transforms.RandomPerspective(distortion_scale=0.5, p=1)(original_dataset[i][0])) # Turns in 3d
-        dataset.append(transforms.RandomRotation(degrees=(-45,45))(original_dataset[i][0])) # Rotates within given range
-        dataset.append(transforms.ColorJitter(brightness = .5, hue = .3)(original_dataset[i][0])) # Changes color
+        dataset.append(transforms.RandomPerspective(distortion_scale=0.2, p=1)(original_dataset[i][0])) # Turns in 3d
+        dataset.append(transforms.RandomRotation(degrees=(-30,30))(original_dataset[i][0])) # Rotates within given range
+        dataset.append(transforms.ColorJitter(brightness = .7, hue = .1)(original_dataset[i][0])) # Changes color
 
         # Original image copy
         dataset.append(original_dataset[i][0])
@@ -39,6 +39,6 @@ for path in dirs:
 
     k = 0
     for i in range(len(dataset)):
-        save_image(dataset[i], "./DatasetAugmented/{}Augmented/{}.jpg".format(path,k))
+        save_image(dataset[i], "./DatasetAugmented/{}/{}.jpg".format(path,k))
         k += 1
 

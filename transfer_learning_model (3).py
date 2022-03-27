@@ -24,13 +24,16 @@ import matplotlib.pyplot as plt
 import math
 import torchvision.models as models
 
+# set up the random seed
 torch.manual_seed(1)
 
 !unzip 'DatasetAugmented'
 
-vgg16 = models.vgg.vgg16(pretrained=True) #vgg16
+vgg16 = models.vgg.vgg16(pretrained=True) #vgg16 setup
 
-data_path = 'DatasetAugmented'
+# 6 classes
+classes = ['BlackAugmented', 'AsianAugmented', 'IndianAugmented', 'LatinoAugmented', 
+           'MiddleEasternAugmented', 'WhiteAugmented']
 
 # Normalizes the dataset over all pixels
 def mean_std_all(dataset):
@@ -46,6 +49,23 @@ def mean_std_all(dataset):
     mean = total / (count * 3 * 224 * 224)
     squared_mean = squared_total / (count * 3 * 224 * 224)
     std = (squared_mean - mean**2)**0.5
+    return mean, std
+
+# Normalizes the dataset overl 3 different RBG channels separately
+def mean_std_seperate(dataset):
+    total = [0,0,0]
+    count = 0
+    squared_total = [0,0,0]
+    
+    for data in dataset:
+        for i in range(3):
+            total[i] += torch.sum(data[0][i])
+            squared_total[i] += torch.sum(data[0][i]**2)
+        count += 1
+    mean = [element / (count * 3 * 224 * 224) for element in total]
+    squared_mean = [element / (count * 3 * 224 * 224) for element in squared_total]
+    std = [(squared_mean[i] - mean[i]**2)**0.5 for i in range(3)]
+    print(mean, std)
     return mean, std
 
 def get_data(len_train_data, len_val_data, len_test_data, batch_size=64):
@@ -88,11 +108,6 @@ def get_data(len_train_data, len_val_data, len_test_data, batch_size=64):
 
     # return train_loader, val_loader, test_loader
     return train_set, val_set, test_set
-
-print("Loading data sets...")
-train_data, val_data, test_data = get_data(0.8, 0.2, 0)
-
-classes = ['BlackAugmented', 'AsianAugmented', 'IndianAugmented', 'LatinoAugmented', 'MiddleEasternAugmented', 'WhiteAugmented']
 
 class ANNClassifier(nn.Module):
     def __init__(self):
@@ -148,9 +163,76 @@ def get_accuracy(model, data, batch_size):
         
         #select index with maximum prediction score
         pred = output.max(1, keepdim=True)[1]
+
+        
+        
         correct += pred.eq(labels.view_as(pred)).sum().item()
         total += imgs.shape[0]
     return correct / total
+
+def get_accuracy_per_class(model, data):
+    ''' Computes the total occurence per class that model predicts for data.
+        Use print(dataset.class_to_idx) to fingure out which index belongs to which class.
+        Class accuracy is -1 if the image of that class never occures in a dataset.
+        Returns the list of accuracies.
+    '''
+
+    total_occurance = [0 for c in list_of_classes]
+    correct_predictions = [0 for c in list_of_classes]
+
+    for imgs, labels in torch.utils.data.DataLoader(data, 16):
+        
+        #############################################
+        # To Enable GPU Usage
+        if torch.cuda.is_available():
+            imgs = imgs.cuda()
+            labels = labels.cuda()
+        #############################################
+
+        output = model(imgs)
+        # select index with maximum prediction score
+        pred = output.max(1, keepdim=True)[1]
+        pred = pred[:,0].tolist()
+        labels = labels.tolist()
+        for i in range(len(labels)):
+            total_occurance[labels[i]] += 1 # Update the total count of occurance for this label
+            if labels[i] == pred[i]:
+                # Update if the prediction was correct
+                correct_predictions[labels[i]] += 1 
+    
+    acc = []
+    # Find perceptange per class
+    for i in range(len(list_of_classes)):
+        if total_occurance[i] != 0:
+            acc.append((correct_predictions[i] / total_occurance[i]) * 100)
+        else: # Meaning never appeared
+            acc.append(-1)
+    return acc
+
+def save_the_model(new_val_acc, model):
+    ''' If the new_val_acc beats the curr_acc, updates the best_model.
+        Returns 1 if the best model was updated and 0 otherwise.
+    '''
+
+    if not os.path.exists("./best_model_acc.txt"): # Do necessary adjustments if the script is being run for the first time
+        f = open("best_model_acc.txt", "w")
+        f.write("0")
+        f.close()
+        curr_acc = 0
+    else:
+        f = open("best_model_acc.txt", "r")
+        curr_acc = float(f.readline().strip())
+        f.close()
+
+    if curr_acc < new_val_acc:
+        # Update the model
+        print("Updating the model. Previous accuracy {} | New accuracy {}".format(curr_acc, new_val_acc))
+        torch.save(model.state_dict(), "best_model")
+        f = open("best_model_acc.txt", "w")
+        f.write(str(new_val_acc))
+        f.close()
+        return 1
+    return 0
 
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
     torch.manual_seed(1000)  # set the random seed
@@ -174,7 +256,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
               labels = labels.cuda()
             #############################################
             
-              
+           
+
             out = model(VGGC(imgs))             # forward pass
             loss = criterion(out, labels) # compute the total loss
             loss.backward()               # backward pass (compute parameter updates)
@@ -206,8 +289,9 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
     plt.xlabel("Iterations")
     plt.ylabel("Loss")
     plt.show()
-
+    
     plt.title("Training Curve")
+
     plt.plot(range(1 ,num_epochs+1), train_acc, label="Train")
     plt.plot(range(1 ,num_epochs+1), val_acc, label="Validation")
     plt.xlabel("Epochs")
@@ -217,6 +301,9 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
+
+print("Loading data sets...")
+train_data, val_data, test_data = get_data(0.8, 0.2, 0)
 
 model = ANNClassifier()
 VGGC = vgg16.features
