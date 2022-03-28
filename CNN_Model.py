@@ -265,7 +265,7 @@ def get_confusion_matrix(model, data):
 
 def print_confusion_matrix(model, data):
     matrix = get_confusion_matrix(model, data)
-    print("Entry i, j indiates the percentage of j predictions which were made for label i out of all predictions for i:")
+    print("Entry i, j indiates the percentage of j predictions which were made for label i out of all predictions for i: \n")
     for row in matrix:
         print(row)
 
@@ -352,8 +352,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-train_data = get_data("./DatasetAugmented", 0.001)
-val_data = get_data("./TestImages", 0.1)
+train_data = get_data("./DatasetAugmented", 0.8)
+val_data = get_data("./Validation Images", 1.0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
@@ -361,7 +361,7 @@ if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
 
-train(cnn_model, train_data, val_data, 0.005, 16, 10)
+# train(cnn_model, train_data, val_data, 0.005, 16, 10)
 # train(cnn_model, train_data, val_data, 0.001, 16, 20)
 # print(get_accuracy_per_class(cnn_model, val_data))
 
@@ -369,8 +369,8 @@ train(cnn_model, train_data, val_data, 0.005, 16, 10)
 
 # test_data = get_data("./Test Images", 1.0)
 
-# state = torch.load("./Model/best_model", map_location=torch.device('cpu'))
-# cnn_model.load_state_dict(state)
+state = torch.load("./Model/best_model")
+cnn_model.load_state_dict(state)
 # print(get_accuracy(cnn_model, torch.utils.data.DataLoader(val_data, 16)))
 # print(get_accuracy_per_class(cnn_model, val_data))
 print_confusion_matrix(cnn_model, val_data)
