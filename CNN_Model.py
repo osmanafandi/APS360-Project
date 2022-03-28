@@ -13,7 +13,6 @@ import os
 
 torch.manual_seed(1000)  # set the random seed
 
-
 class CNN_Model(nn.Module):
     #Should decide on default value for num_classes
     def __init__(self, in_channels = 3, num_classes=6):
@@ -142,10 +141,10 @@ def get_data(path, len_data):
     # return train_loader, val_loader, test_loader
     return data_set
 
-def get_accuracy(model, data_loader, batch_size):
+def get_accuracy(model, data_loader):
+    torch.manual_seed(1000)  # set the random seed
     correct = 0
     total = 0
-    torch.manual_seed(1000)  # set the random seed
 
     for imgs, labels in data_loader:
         
@@ -162,7 +161,7 @@ def get_accuracy(model, data_loader, batch_size):
         pred = output.max(1, keepdim=True)[1]
         correct += pred.eq(labels.view_as(pred)).sum().item()
         total += imgs.shape[0]
-    print("Get accuracy total {}, correct {}".format(total, correct))
+    # print("Get accuracy total {}, correct {}".format(total, correct))
     return correct / total
 
 list_of_classes = ['Asian', 'Black', 'Indian', 'Latino', 'MiddleEastern', 'White']
@@ -174,10 +173,9 @@ def get_accuracy_per_class(model, data):
         Class accuracy is -1 if the image of that class never occures in a dataset.
         Returns the list of accuracies.
     '''
-
+    torch.manual_seed(1000)  # set the random seed
     total_occurance = [0 for c in list_of_classes]
     correct_predictions = [0 for c in list_of_classes]
-    torch.manual_seed(1000)  # set the random seed
 
 
     for imgs, labels in torch.utils.data.DataLoader(data, 16):
@@ -207,8 +205,8 @@ def get_accuracy_per_class(model, data):
             acc.append((correct_predictions[i] / total_occurance[i]) * 100)
         else: # Meaning never appeared
             acc.append(-1)
-    print("Per class accuracy total {}, correct {}".format(sum(total_occurance), sum(correct_predictions)))
-    print((sum(correct_predictions) / sum(total_occurance)) * 100)
+    # print("Per class accuracy total {}, correct {}".format(sum(total_occurance), sum(correct_predictions)))
+    # print((sum(correct_predictions) / sum(total_occurance)) * 100)
     return acc
         
 def save_the_model(new_val_acc, model):
@@ -240,9 +238,8 @@ def get_confusion_matrix(model, data):
     ''' Creates a confusion matrix where entry i, j indiates the percentage of j
         predictions which were made for label i out of all predictions for i. 
     '''
-
-    matrix = [[0 for k in list_of_classes] for c in list_of_classes]
     torch.manual_seed(1000)  # set the random seed
+    matrix = [[0 for k in list_of_classes] for c in list_of_classes]
 
     for imgs, labels in torch.utils.data.DataLoader(data, 16):
         
@@ -278,7 +275,7 @@ def print_confusion_matrix(model, data):
 
 
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
-    # torch.manual_seed(1000)  # set the random seed
+    torch.manual_seed(1000)  # set the random seed
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
     criterion = nn.CrossEntropyLoss()
@@ -310,8 +307,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
             losses.append(float(loss) / batch_size)  # compute *average* loss
             n += 1
 
-        train_acc.append(get_accuracy(model, train_loader, batch_size))  # compute training accuracy
-        val_acc.append(get_accuracy(model, val_loader, batch_size))  # compute validation accuracy
+        train_acc.append(get_accuracy(model, train_loader))  # compute training accuracy
+        val_acc.append(get_accuracy(model, val_loader))  # compute validation accuracy
         save_the_model(val_acc[-1], model)
         print(("Epoch {}: Train acc: {} |" + "Validation acc: {}").format(
             epoch + 1,
@@ -355,8 +352,8 @@ def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_e
 # train(cnn_model, train_data, val_data, 0.01, 16, 75)
 
 print("Loading data sets...")
-# train_data = get_data("./DatasetAugmented", 0.8)
-val_data = get_data("./TestImages", 1.0)
+train_data = get_data("./DatasetAugmented", 0.001)
+val_data = get_data("./TestImages", 0.1)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
@@ -364,16 +361,16 @@ if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
 
-# train(cnn_model, train_data, val_data, 0.005, 16, 10)
+train(cnn_model, train_data, val_data, 0.005, 16, 10)
 # train(cnn_model, train_data, val_data, 0.001, 16, 20)
 # print(get_accuracy_per_class(cnn_model, val_data))
 
 
 
-state = torch.load("./Model/best_model", map_location=torch.device('cpu'))
-cnn_model.load_state_dict(state)
-print_confusion_matrix(cnn_model, val_data)
-# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(val_data, 16), 16))
-# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(val_data, 16), 16))
+# test_data = get_data("./Test Images", 1.0)
 
+# state = torch.load("./Model/best_model", map_location=torch.device('cpu'))
+# cnn_model.load_state_dict(state)
+# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(val_data, 16)))
 # print(get_accuracy_per_class(cnn_model, val_data))
+print_confusion_matrix(cnn_model, val_data)
