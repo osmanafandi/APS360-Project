@@ -203,6 +203,32 @@ def get_accuracy(model, data_loader):
 list_of_classes = ['Asian', 'Black', 'Indian', 'MiddleEastern', 'White']
 
 
+def showTestImageResults(model, testPath):
+    torch.manual_seed(1)
+    # transform setting
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                    transforms.ToTensor()])
+    # load data from path
+    mydataset = torchvision.datasets.ImageFolder(testPath, transform=transform)
+
+    # Prepping data loader
+    my_loader = torch.utils.data.DataLoader(mydataset, batch_size=1, num_workers=1, shuffle=True)
+
+    for images, labels in iter(my_loader):
+        imgs = model(images)
+        pred = imgs.max(1, keepdim=True)[1]
+        image = images.numpy()
+
+        classes = ['Asian', 'Black', 'Indian', 'Latino', 'MiddleEastern', 'White']
+
+        # Plot the images in the batch - from sample code
+        fig = plt.figure(figsize=(30, 10))
+        ax = fig.add_subplot(2, 20 / 2, 1, xticks=[], yticks=[])
+        plt.imshow(np.transpose(image[0], (1, 2, 0)))
+        # print(labels[0])
+        phrase = "Predicted:{0}, Actual:{1}".format(classes[pred.item()], classes[labels.item()])
+        ax.set_title(phrase)
+
 def get_accuracy_per_class(model, data):
     ''' Computes the total accuracy per class that model predicts for data.
         Use print(dataset.class_to_idx) to figure out which index belongs to which class.
