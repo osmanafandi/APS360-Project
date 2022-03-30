@@ -46,6 +46,44 @@ def mean_std_seperate(dataset):
     return mean, std
 
 
+def get_data_old(len_train_data, len_val_data, len_test_data):
+    # ***** Specify the path to final dataset folder on your loca machine ******
+    data_path = "./Final Dataset"
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                    transforms.ToTensor()])
+
+    # Seperate for training, validation, and test data
+    dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
+    num_train = math.floor(len(dataset) * len_train_data)
+    num_val = math.floor(len(dataset) * len_val_data)
+    num_test = math.floor(len(dataset) * len_test_data)
+    print("Number of images for training: ", num_train)
+    print("Number of images for validation: ", num_val)
+    print("Number of images for test: ", num_test)
+    dummy_len = len(dataset) - (num_test + num_train + num_val)
+
+    mean, std = mean_std_all(dataset)
+    print("Mean: {}, Std: {}".format(mean, std))
+
+    transform = transforms.Compose([transforms.Resize((224, 224)),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((mean),(std))])
+
+    # plt.imshow(dataset[0][0].permute(1,2,0))
+    # plt.show()
+
+    dataset = torchvision.datasets.ImageFolder(data_path, transform=transform)
+    # plt.imshow(dataset[0][0].permute(1,2,0))
+    # plt.show()
+
+    # Split into train and validation
+    train_set, val_set, test_set, dummy = torch.utils.data.random_split(dataset, [num_train, num_val, num_test,
+                                                                                  dummy_len])  # 80%, 10%, 10% split
+
+    # return train_loader, val_loader, test_loader
+    return train_set, val_set, test_set
+
+
 def get_data(path, len_data):
     # ***** Specify the path to final dataset folder on your local machine ******
     data_path = path
@@ -89,7 +127,7 @@ class ANNBaseline(nn.Module):
         self.name = "Baseline"
         self.layer1 = nn.Linear(3 * 224 * 224, 84)  # images are rgb 224 x 224 pixels
         self.layer2 = nn.Linear(84, 28)
-        self.layer3 = nn.Linear(28, 6)  # 7 outputs
+        self.layer3 = nn.Linear(28, 5)  # 7 outputs
 
     def forward(self, img):
         flattened = img.view(-1, 3 * 224 * 224)
@@ -111,7 +149,7 @@ class CNNBaseline(nn.Module):
         self.conv3 = nn.Conv2d(10, 25, 3)
         self.pool = nn.MaxPool2d(2, 2)  # kernel_size, stride
         self.fc1 = nn.Linear(25 * 26 * 26, 32)  # 10 * ((110-5+1)/2) * ((110-5+1)/2)
-        self.fc2 = nn.Linear(32, 6)
+        self.fc2 = nn.Linear(32, 5)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
@@ -215,12 +253,13 @@ def train_baseline(model, train_data, val_data, learning_rate=0.001, batch_size=
 # train_baseline(baseline_model, train_data, val_data, 0.01, 64, 150)
 
 print("Loading data sets...")
-train_data = get_data("./DatasetAugmented", 0.8)
-val_data = get_data("./Validation Images", 1.0)
+train_data, val_data, test_data = get_data_old(0.3, 0.03, 0)
+# train_data = get_data("./DatasetAugmented", 0.8)
+# val_data = get_data("./Validation Images", 1.0)
 
 print("Training baseline...")
 baseline_model = CNNBaseline()
 if torch.cuda.is_available():
     baseline_model.cuda()  # USE GPU!
 
-train_baseline(baseline_model, train_data, val_data, 0.001, 64, 20)
+train_baseline(baseline_model, train_data, val_data, 0.001, 64, 15)
