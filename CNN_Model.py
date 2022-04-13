@@ -330,9 +330,6 @@ def print_confusion_matrix(model, data):
         print(row)
 
     return None
-            
-    
-
 
 def train(model, train_data, val_data, learning_rate=0.001, batch_size=64, num_epochs=1):
     torch.manual_seed(1000)  # set the random seed
@@ -415,6 +412,7 @@ print("Loading data sets...")
 # train_data, val_data, test_data = get_data_old(0.4, 0.04, 0)
 train_data = get_data("./DatasetAugmented", 1.0)
 val_data = get_data("./Validation Images", 1.0)
+test_data = get_data("./Test Set", 1.0)
 
 print("Training CNN...")
 cnn_model = CNN_Model()
@@ -422,16 +420,13 @@ if torch.cuda.is_available():
     cnn_model.cuda() #USE GPU!
 
 
-train(cnn_model, train_data, val_data, 0.005, 16, 20)
+# train(cnn_model, train_data, val_data, 0.005, 16, 20)
 # train(cnn_model, train_data, val_data, 0.001, 16, 10)
-print(get_accuracy_per_class(cnn_model, val_data))
-
-
-
-# test_data = get_data("./Test Images", 1.0)
-
-# state = torch.load("./best_model")
-# cnn_model.load_state_dict(state)
-# print(get_accuracy(cnn_model, torch.utils.data.DataLoader(val_data, 16)))
 # print(get_accuracy_per_class(cnn_model, val_data))
-print_confusion_matrix(cnn_model, val_data)
+
+
+state = torch.load("./Model/best_model")
+cnn_model.load_state_dict(state)
+print(get_accuracy(cnn_model, torch.utils.data.DataLoader(test_data, 16)))
+print(get_accuracy_per_class(cnn_model, test_data))
+print_confusion_matrix(cnn_model, test_data)

@@ -244,22 +244,24 @@ def train_baseline(model, train_data, val_data, learning_rate=0.001, batch_size=
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
 
 
-# baseline_model = CNNBaseline()
-# if torch.cuda.is_available():
-#     baseline_model.cuda() #USE GPU!
+baseline_model = CNNBaseline()
+if torch.cuda.is_available():
+    baseline_model.cuda() #USE GPU!
 
 # print("Testing for overfit (sanity check)...")
 # train_data, val_data, test_data = get_data(0.001, 0.001, 0.001) #load small dataset for overfit test
 # train_baseline(baseline_model, train_data, val_data, 0.01, 64, 150)
 
 print("Loading data sets...")
-train_data, val_data, test_data = get_data_old(0.3, 0.03, 0)
-# train_data = get_data("./DatasetAugmented", 0.8)
+train_data, val_data, test_data = get_data_old(0.2, 0.022, 0.022) #load unaugmented data
+# train_data = get_data("./DatasetAugmented", 1.0)
 # val_data = get_data("./Validation Images", 1.0)
+# test_data = get_data("./Test Set", 1.0)
 
 print("Training baseline...")
 baseline_model = CNNBaseline()
 if torch.cuda.is_available():
     baseline_model.cuda()  # USE GPU!
 
-train_baseline(baseline_model, train_data, val_data, 0.001, 64, 15)
+train_baseline(baseline_model, train_data, val_data, 0.001, 64, 10)
+print(get_accuracy(baseline_model, test_data, 64))
